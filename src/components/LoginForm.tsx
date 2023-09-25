@@ -14,8 +14,19 @@ export const LoginForm: React.FC<LoginFormProps> = ({ onSubmit }) => {
   return (
     <View>
       <Text h1>Login Form</Text>
-      <Input label="Username" value={username} onChangeText={setUsername}/>
-      <Input label="Password" secureTextEntry value={password} onChangeText={setPassword}/>
+      <Input
+        label="Username"
+        placeholder="email@domain.com"
+        value={username}
+        onChangeText={setUsername}
+      />
+      <Input
+        label="Password"
+        placeholder="******"
+        secureTextEntry
+        value={password}
+        onChangeText={setPassword}
+      />
 
       <Button
         title="Login"

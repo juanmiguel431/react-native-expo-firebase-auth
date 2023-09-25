@@ -4,7 +4,7 @@ import { StyleSheet } from 'react-native';
 import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
 
 import { initializeApp } from 'firebase/app';
-import { initializeAuth, getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, getReactNativePersistence } from 'firebase/auth';
+import { initializeAuth, getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, getReactNativePersistence, AuthError } from 'firebase/auth';
 import type { Auth } from 'firebase/auth';
 
 import ReactNativeAsyncStorage, { AsyncStorageStatic } from '@react-native-async-storage/async-storage';
@@ -44,28 +44,35 @@ const App: React.FC = () => {
         <StatusBar style="auto"/>
         <Header title="Authentication"/>
         <LoginForm
-          onSubmit={(user) => {
+          onSubmit={async (user) => {
+            setErrorMessage('');
             if (!auth) return;
 
-            signInWithEmailAndPassword(auth, user.username, user.password).then((userCredential) => {
-              const user = userCredential.user;
-              console.log('JMPC1', userCredential);
-            }).catch((error) => {
-              console.log(error);
-              setErrorMessage(error.message)
-            });
+            try {
+              const userCredential = await signInWithEmailAndPassword(auth, user.username, user.password);
+              const loggedUser = userCredential.user;
+            } catch (loginErr) {
+              const authLoginError = loginErr as AuthError;
 
-            // createUserWithEmailAndPassword(auth, user.username, user.password).then((userCredential) => {
-            //   const user = userCredential.user;
-            //
-            // }).catch((error) => {
-            //   const errorCode = error.code;
-            //   const errorMessage = error.message;
-            // });
+              try {
+                const newUserCredential = await createUserWithEmailAndPassword(auth, user.username, user.password);
+                const newUser = newUserCredential.user;
+              } catch (createErr) {
+                if (createErr instanceof Error) {
+                  const authCreateError = createErr as AuthError;
+
+                  if (authCreateError.code === 'auth/email-already-in-use') {
+                    setErrorMessage(authLoginError.message);
+                  } else {
+                    setErrorMessage(createErr.message);
+                  }
+                }
+              }
+            }
           }}
         />
         {errorMessage &&
-          <Text>{errorMessage}</Text>
+          <Text style={styles.error}>{errorMessage}</Text>
         }
       </SafeAreaView>
     </SafeAreaProvider>
@@ -79,6 +86,11 @@ const styles = StyleSheet.create({
     // alignItems: 'center',
     // justifyContent: 'center',
   },
+  error: {
+    alignSelf: 'center',
+    color: 'red',
+    fontSize: 20
+  }
 });
 
 export default App;

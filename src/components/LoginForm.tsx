@@ -17,11 +17,15 @@ export const LoginForm: React.FC<LoginFormProps> = ({ onSubmit }) => {
       <Input
         label="Username"
         placeholder="email@domain.com"
+        textContentType="emailAddress"
+        keyboardType="email-address"
+        autoCapitalize="none"
         value={username}
         onChangeText={setUsername}
       />
       <Input
         label="Password"
+        textContentType="password"
         placeholder="******"
         secureTextEntry
         value={password}

@@ -1,19 +1,8 @@
 import React, { PropsWithChildren } from 'react';
 import { Text, View, StyleSheet, Platform } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
-
 type HeaderPros = PropsWithChildren & { title: string; };
 
 export const Header: React.FC<HeaderPros> = ({ title }) => {
-  const insets = useSafeAreaInsets();
-
-  const safeArea = {
-    marginTop: insets.top,
-    paddingBottom: insets.bottom,
-    paddingLeft: insets.left,
-    paddingRight: insets.right
-  };
-
   return (
     <View
       style={StyleSheet.flatten([styles.container])}

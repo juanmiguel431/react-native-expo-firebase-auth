@@ -1,12 +1,21 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { StatusBar } from 'expo-status-bar';
 import { StyleSheet } from 'react-native';
 import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
+
 import { initializeApp } from 'firebase/app';
+import { initializeAuth, getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, getReactNativePersistence } from 'firebase/auth';
+import type { Auth } from 'firebase/auth';
+
+import ReactNativeAsyncStorage, { AsyncStorageStatic } from '@react-native-async-storage/async-storage';
+
 import { Header } from './components/common';
 import LoginForm from './components/LoginForm';
+import { Text } from '@rneui/themed';
 
 const App: React.FC = () => {
+  const [auth, setAuth] = useState<Auth | null>(null);
+  const [errorMessage, setErrorMessage] = useState('');
 
   useEffect(() => {
     const app = initializeApp({
@@ -18,6 +27,15 @@ const App: React.FC = () => {
       appId: process.env.EXPO_PUBLIC_FIREBASE_APP_ID,
       measurementId: process.env.EXPO_PUBLIC_FIREBASE_MEASUREMENT_ID
     });
+
+    // const auth = getAuth(app);
+
+    //https://stackoverflow.com/questions/76914913/cannot-import-getreactnativepersistence-in-firebase10-1-0
+    const auth = initializeAuth(app, {
+      persistence: getReactNativePersistence(ReactNativeAsyncStorage)
+    });
+    setAuth(auth);
+
   }, []);
 
   return (
@@ -27,8 +45,28 @@ const App: React.FC = () => {
         <Header title="Authentication"/>
         <LoginForm
           onSubmit={(user) => {
-            console.log(user);
-          }}/>
+            if (!auth) return;
+
+            signInWithEmailAndPassword(auth, user.username, user.password).then((userCredential) => {
+              const user = userCredential.user;
+              console.log('JMPC1', userCredential);
+            }).catch((error) => {
+              console.log(error);
+              setErrorMessage(error.message)
+            });
+
+            // createUserWithEmailAndPassword(auth, user.username, user.password).then((userCredential) => {
+            //   const user = userCredential.user;
+            //
+            // }).catch((error) => {
+            //   const errorCode = error.code;
+            //   const errorMessage = error.message;
+            // });
+          }}
+        />
+        {errorMessage &&
+          <Text>{errorMessage}</Text>
+        }
       </SafeAreaView>
     </SafeAreaProvider>
   );

@@ -1,10 +1,10 @@
 import React, { useEffect } from 'react';
 import { StatusBar } from 'expo-status-bar';
-import { StyleSheet, Text } from 'react-native';
+import { StyleSheet } from 'react-native';
 import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
-import { initializeApp } from "firebase/app";
-import { getAnalytics } from "firebase/analytics";
+import { initializeApp } from 'firebase/app';
 import { Header } from './components/common';
+import LoginForm from './components/LoginForm';
 
 const App: React.FC = () => {
 
@@ -18,8 +18,6 @@ const App: React.FC = () => {
       appId: process.env.EXPO_PUBLIC_FIREBASE_APP_ID,
       measurementId: process.env.EXPO_PUBLIC_FIREBASE_MEASUREMENT_ID
     });
-
-    const analytics = getAnalytics(app);
   }, []);
 
   return (
@@ -27,7 +25,10 @@ const App: React.FC = () => {
       <SafeAreaView style={styles.container}>
         <StatusBar style="auto"/>
         <Header title="Authentication"/>
-        <Text>My App</Text>
+        <LoginForm
+          onSubmit={(user) => {
+            console.log(user);
+          }}/>
       </SafeAreaView>
     </SafeAreaProvider>
   );

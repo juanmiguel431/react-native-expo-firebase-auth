@@ -16,6 +16,7 @@ import { Text } from '@rneui/themed';
 const App: React.FC = () => {
   const [auth, setAuth] = useState<Auth | null>(null);
   const [errorMessage, setErrorMessage] = useState('');
+  const [loading, setLoading] = useState(false);
 
   useEffect(() => {
     const app = initializeApp({
@@ -44,7 +45,9 @@ const App: React.FC = () => {
         <StatusBar style="auto"/>
         <Header title="Authentication"/>
         <LoginForm
+          isLoading={loading}
           onSubmit={async (user) => {
+            setLoading(true);
             setErrorMessage('');
             if (!auth) return;
 
@@ -68,6 +71,8 @@ const App: React.FC = () => {
                   }
                 }
               }
+            } finally {
+              setLoading(false);
             }
           }}
         />

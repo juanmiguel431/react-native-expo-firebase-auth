@@ -2,12 +2,14 @@ import React, { useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 import { Button, Input, Text } from '@rneui/themed';
 import { User } from '../models/user';
+import { Spinner } from './common';
 
 type LoginFormProps = {
   onSubmit: (user: User) => void;
+  isLoading?: boolean;
 }
 
-export const LoginForm: React.FC<LoginFormProps> = ({ onSubmit }) => {
+export const LoginForm: React.FC<LoginFormProps> = ({ onSubmit, isLoading }) => {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
 
@@ -16,6 +18,7 @@ export const LoginForm: React.FC<LoginFormProps> = ({ onSubmit }) => {
       <Text h1>Login Form</Text>
       <Input
         label="Username"
+        disabled={isLoading}
         placeholder="email@domain.com"
         textContentType="emailAddress"
         keyboardType="email-address"
@@ -25,6 +28,7 @@ export const LoginForm: React.FC<LoginFormProps> = ({ onSubmit }) => {
       />
       <Input
         label="Password"
+        disabled={isLoading}
         textContentType="password"
         placeholder="******"
         secureTextEntry
@@ -32,10 +36,13 @@ export const LoginForm: React.FC<LoginFormProps> = ({ onSubmit }) => {
         onChangeText={setPassword}
       />
 
-      <Button
-        title="Login"
-        onPress={() => onSubmit({ username, password })}
-      />
+      {!isLoading &&
+        <Button
+          title="Login"
+          onPress={() => onSubmit({ username, password })}
+        />
+      }
+      <Spinner isLoading={isLoading}/>
     </View>
   );
 };

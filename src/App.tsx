@@ -1,22 +1,33 @@
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import { StatusBar } from 'expo-status-bar';
-import { StyleSheet } from 'react-native';
+import { StyleSheet, View } from 'react-native';
 import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
 
 import { initializeApp } from 'firebase/app';
-import { initializeAuth, getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, getReactNativePersistence, AuthError } from 'firebase/auth';
+import {
+  initializeAuth,
+  getAuth,
+  createUserWithEmailAndPassword,
+  signInWithEmailAndPassword,
+  getReactNativePersistence,
+  signOut,
+  AuthError, User
+} from 'firebase/auth';
 import type { Auth } from 'firebase/auth';
 
 import ReactNativeAsyncStorage, { AsyncStorageStatic } from '@react-native-async-storage/async-storage';
 
 import { Header } from './components/common';
 import LoginForm from './components/LoginForm';
-import { Text } from '@rneui/themed';
+import { Button, Text } from '@rneui/themed';
+import { User as LocalUser } from './models/user';
 
 const App: React.FC = () => {
   const [auth, setAuth] = useState<Auth | null>(null);
   const [errorMessage, setErrorMessage] = useState('');
   const [loading, setLoading] = useState(false);
+  const [loggedIn, setLoggedIn] = useState(false);
+  const [user, setUser] = useState<User | null>(null);
 
   useEffect(() => {
     const app = initializeApp({
@@ -35,55 +46,86 @@ const App: React.FC = () => {
     const auth = initializeAuth(app, {
       persistence: getReactNativePersistence(ReactNativeAsyncStorage)
     });
+
+    auth.onAuthStateChanged((user) => {
+      const isLoggedIn = !!user;
+      setUser(user);
+      setLoggedIn(isLoggedIn);
+    });
+
     setAuth(auth);
 
   }, []);
+
+  const onSubmit = useCallback(async (user: LocalUser) => {
+    if (!auth) return false;
+
+    try {
+      setLoading(true);
+      setErrorMessage('');
+
+      const userCredential = await signInWithEmailAndPassword(auth, user.username, user.password);
+      const loggedUser = userCredential.user;
+      return true;
+    } catch (loginErr) {
+      const authLoginError = loginErr as AuthError;
+
+      try {
+        const newUserCredential = await createUserWithEmailAndPassword(auth, user.username, user.password);
+        const newUser = newUserCredential.user;
+        return true;
+      } catch (createErr) {
+        if (createErr instanceof Error) {
+          const authCreateError = createErr as AuthError;
+
+          if (authCreateError.code === 'auth/email-already-in-use') {
+            setErrorMessage(authLoginError.message);
+          } else {
+            setErrorMessage(createErr.message);
+          }
+        }
+
+        return false;
+      }
+    } finally {
+      setLoading(false);
+    }
+  }, [auth]);
 
   return (
     <SafeAreaProvider>
       <SafeAreaView style={styles.container}>
         <StatusBar style="auto"/>
         <Header title="Authentication"/>
-        <LoginForm
-          isLoading={loading}
-          onSubmit={async (user) => {
-            if (!auth) return false;
-
-            try {
-              setLoading(true);
-              setErrorMessage('');
-
-              const userCredential = await signInWithEmailAndPassword(auth, user.username, user.password);
-              const loggedUser = userCredential.user;
-              return true;
-            } catch (loginErr) {
-              const authLoginError = loginErr as AuthError;
+        {loggedIn ? (
+          <View>
+            <Text h4>Hello {user?.email}</Text>
+            <Button title="Logout" onPress={async () => {
+              if (!auth) return;
 
               try {
-                const newUserCredential = await createUserWithEmailAndPassword(auth, user.username, user.password);
-                const newUser = newUserCredential.user;
-                return true;
-              } catch (createErr) {
-                if (createErr instanceof Error) {
-                  const authCreateError = createErr as AuthError;
-
-                  if (authCreateError.code === 'auth/email-already-in-use') {
-                    setErrorMessage(authLoginError.message);
-                  } else {
-                    setErrorMessage(createErr.message);
-                  }
-                }
-
-                return false;
+                setLoading(true);
+                await signOut(auth);
+                setUser(null);
+                setLoggedIn(false);
+              } catch (e) {
+              } finally {
+                setLoading(false);
               }
-            } finally {
-              setLoading(false);
+
+            }}/>
+          </View>
+        ) : (
+          <>
+            <LoginForm
+              isLoading={loading}
+              onSubmit={onSubmit}
+            />
+            {errorMessage &&
+              <Text style={styles.error}>{errorMessage}</Text>
             }
-          }}
-        />
-        {errorMessage &&
-          <Text style={styles.error}>{errorMessage}</Text>
-        }
+          </>
+        )}
       </SafeAreaView>
     </SafeAreaProvider>
   );

@@ -47,19 +47,22 @@ const App: React.FC = () => {
         <LoginForm
           isLoading={loading}
           onSubmit={async (user) => {
-            setLoading(true);
-            setErrorMessage('');
-            if (!auth) return;
+            if (!auth) return false;
 
             try {
+              setLoading(true);
+              setErrorMessage('');
+
               const userCredential = await signInWithEmailAndPassword(auth, user.username, user.password);
               const loggedUser = userCredential.user;
+              return true;
             } catch (loginErr) {
               const authLoginError = loginErr as AuthError;
 
               try {
                 const newUserCredential = await createUserWithEmailAndPassword(auth, user.username, user.password);
                 const newUser = newUserCredential.user;
+                return true;
               } catch (createErr) {
                 if (createErr instanceof Error) {
                   const authCreateError = createErr as AuthError;
@@ -70,6 +73,8 @@ const App: React.FC = () => {
                     setErrorMessage(createErr.message);
                   }
                 }
+
+                return false;
               }
             } finally {
               setLoading(false);

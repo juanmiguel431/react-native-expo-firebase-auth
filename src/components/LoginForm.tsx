@@ -5,7 +5,7 @@ import { User } from '../models/user';
 import { Spinner } from './common';
 
 type LoginFormProps = {
-  onSubmit: (user: User) => void;
+  onSubmit: (user: User) => Promise<boolean>;
   isLoading?: boolean;
 }
 
@@ -39,7 +39,13 @@ export const LoginForm: React.FC<LoginFormProps> = ({ onSubmit, isLoading }) => 
       {!isLoading &&
         <Button
           title="Login"
-          onPress={() => onSubmit({ username, password })}
+          onPress={async () => {
+            const onSuccess = await onSubmit({ username, password })
+            if (onSuccess) {
+              setUsername('');
+              setPassword('');
+            }
+          }}
         />
       }
       <Spinner isLoading={isLoading}/>

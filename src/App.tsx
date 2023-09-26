@@ -17,7 +17,7 @@ import type { Auth } from 'firebase/auth';
 
 import ReactNativeAsyncStorage, { AsyncStorageStatic } from '@react-native-async-storage/async-storage';
 
-import { Header } from './components/common';
+import { Header, Spinner } from './components/common';
 import LoginForm from './components/LoginForm';
 import { Button, Text } from '@rneui/themed';
 import { User as LocalUser } from './models/user';
@@ -26,7 +26,7 @@ const App: React.FC = () => {
   const [auth, setAuth] = useState<Auth | null>(null);
   const [errorMessage, setErrorMessage] = useState('');
   const [loading, setLoading] = useState(false);
-  const [loggedIn, setLoggedIn] = useState(false);
+  const [loggedIn, setLoggedIn] = useState<boolean | null>(null);
   const [user, setUser] = useState<User | null>(null);
 
   useEffect(() => {
@@ -92,40 +92,54 @@ const App: React.FC = () => {
     }
   }, [auth]);
 
+  const renderContent = useCallback(
+    (loggedIn: boolean | null, auth: Auth | null, loading: boolean, onSubmit: (user: LocalUser) => Promise<boolean>, errorMessage: string, user: User | null) => {
+      switch (loggedIn) {
+        case true:
+          return (
+            <View>
+              <Text h4>Hello {user?.email}</Text>
+              <Button title="Logout" onPress={async () => {
+                if (!auth) return;
+
+                try {
+                  setLoading(true);
+                  await signOut(auth);
+                  setUser(null);
+                  setLoggedIn(false);
+                } catch (e) {
+                } finally {
+                  setLoading(false);
+                }
+
+              }}/>
+            </View>
+          );
+        case false:
+          return (
+            <>
+              <LoginForm
+                isLoading={loading}
+                onSubmit={onSubmit}
+              />
+              {errorMessage &&
+                <Text style={styles.error}>{errorMessage}</Text>
+              }
+            </>
+          );
+        default:
+          return (
+            <Spinner isLoading={true} size="large"/>
+          );
+      }
+    }, []);
+
   return (
     <SafeAreaProvider>
       <SafeAreaView style={styles.container}>
         <StatusBar style="auto"/>
         <Header title="Authentication"/>
-        {loggedIn ? (
-          <View>
-            <Text h4>Hello {user?.email}</Text>
-            <Button title="Logout" onPress={async () => {
-              if (!auth) return;
-
-              try {
-                setLoading(true);
-                await signOut(auth);
-                setUser(null);
-                setLoggedIn(false);
-              } catch (e) {
-              } finally {
-                setLoading(false);
-              }
-
-            }}/>
-          </View>
-        ) : (
-          <>
-            <LoginForm
-              isLoading={loading}
-              onSubmit={onSubmit}
-            />
-            {errorMessage &&
-              <Text style={styles.error}>{errorMessage}</Text>
-            }
-          </>
-        )}
+        {renderContent(loggedIn, auth, loading, onSubmit, errorMessage, user)}
       </SafeAreaView>
     </SafeAreaProvider>
   );
